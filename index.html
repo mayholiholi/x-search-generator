@@ -3,169 +3,344 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Twitterの検索クエリ生成ツール</title>
-  <!-- Bootstrap CSS -->
-  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <title>X 検索クエリ生成</title>
   <style>
-    .toggle-btn {
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      font-size: 1.3em;
+      font-weight: 700;
+      color: #e0e0e0;
+      letter-spacing: 0.03em;
+    }
+
+    .header p {
+      font-size: 0.78em;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 6px;
+      line-height: 1.6;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.75em;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+      /* text-transform: none */
+    }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 0.92em;
+      font-family: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #e8e8e8;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      outline: none;
+    }
+
+    .field input::placeholder,
+    .field textarea::placeholder {
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: rgba(29, 161, 242, 0.5);
+      box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.1);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .field textarea {
+      resize: none;
+      line-height: 1.6;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .input-with-btn {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-with-btn input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .input-with-btn button {
+      padding: 0 14px;
+      font-size: 0.78em;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.5);
       cursor: pointer;
-      padding: 0.375rem 0.75rem;
-      font-size: 0.875rem;
-      line-height: 1.5;
-      border-radius: 0.2rem;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
     }
-    .exclude-retweets {
-      background-color: #007bff;
-      color: #fff;
+
+    .input-with-btn button:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #e0e0e0;
     }
-    .include-retweets {
-      background-color: #6c757d;
-      color: #fff;
+
+    .options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 22px;
     }
+
+    .options label {
+      display: block;
+      font-size: 0.75em;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+      /* text-transform: none */
+      width: 100%;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      font-size: 0.82em;
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .chip:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .chip.active {
+      background: rgba(29, 161, 242, 0.2);
+      border-color: rgba(29, 161, 242, 0.4);
+      color: #1da1f2;
+    }
+
+    .chip input[type="checkbox"] {
+      display: none;
+    }
+
+    .result-area {
+      position: relative;
+    }
+
+    .result-area textarea {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.85em;
+      letter-spacing: 0.01em;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 32px;
+      right: 8px;
+      padding: 6px 12px;
+      font-size: 0.72em;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(29, 161, 242, 0.2);
+      border-color: rgba(29, 161, 242, 0.3);
+      color: #1da1f2;
+    }
+
+    .copy-btn.copied {
+      background: rgba(46, 204, 113, 0.2);
+      border-color: rgba(46, 204, 113, 0.3);
+      color: #2ecc71;
+    }
+
     footer {
       text-align: center;
-      padding: 0.5rem;
-      background-color: #f8f9fa;
-      margin-top: 2rem;
-      border-top: 1px solid #ccc;
-      font-size: 0.85rem;
-      color: #666;
+      padding: 24px 0 8px;
+      font-size: 0.78em;
     }
-    footer p {
-      margin-bottom: 0;
+
+    footer a {
+      color: rgba(255, 255, 255, 0.25);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer a:hover {
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    @media (max-width: 480px) {
+      .row { grid-template-columns: 1fr; }
+      .card { padding: 24px 20px; }
     }
   </style>
 </head>
 <body>
-<div class="container mt-3">
-    <div class="alert alert-info" role="alert" style="font-size: 0.85rem;">
-      <strong>Twitterの検索クエリ生成ツール</strong> - このツールを使用して、特定のTwitterアカウントのツイートを日付範囲やキーワードで検索するクエリを生成します。
-    </div>
-  <div id="app">
-    <div class="row">
-      <!-- Twitter Account ID 入力 -->
-      <div class="col-md-6">
-        <div class="form-group">
-          <label for="account">Twitter Account ID:</label>
-          <input type="text" class="form-control" id="account" v-model="accountID" placeholder="Enter Twitter Account ID">
-        </div>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>X 検索クエリ生成</h1>
+        <p>アカウント・期間・キーワードを入力すると、Xの検索コマンドを自動で作ります</p>
       </div>
-      <!-- From Date 入力 -->
-      <div class="col-md-3">
-        <div class="form-group">
-          <label for="fromDate">From Date:</label>
-          <div class="input-group">
-            <input type="text" class="form-control" id="fromDate" v-model="fromDate" placeholder="YYYY-MM-DD">
-            <div class="input-group-append">
-              <button class="btn btn-outline-secondary" type="button" @click="setToday()">今日</button>
+
+      <div id="app">
+        <div class="field">
+          <label for="account">アカウントID</label>
+          <input type="text" id="account" v-model="accountID" placeholder="@なしで入力（例: elonmusk）">
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="fromDate">開始日</label>
+            <div class="input-with-btn">
+              <input type="date" id="fromDate" v-model="fromDate">
+              <button type="button" @click="setToday()">今日</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="toDate">終了日</label>
+            <div class="input-with-btn">
+              <input type="date" id="toDate" v-model="toDate">
+              <button type="button" @click="setLastYear()">1年前</button>
             </div>
           </div>
         </div>
-      </div>
-      <!-- To Date 入力 -->
-      <div class="col-md-3">
-        <div class="form-group">
-          <label for="toDate">To Date:</label>
-          <div class="input-group">
-            <input type="text" class="form-control" id="toDate" v-model="toDate" placeholder="YYYY-MM-DD">
-            <div class="input-group-append">
-              <button class="btn btn-outline-secondary" type="button" @click="setLastYear()">去年</button>
-            </div>
-          </div>
+
+        <div class="field">
+          <label for="excludeWord">除外ワード</label>
+          <input type="text" id="excludeWord" v-model="excludeWord" placeholder="除外したいキーワード">
+        </div>
+
+        <div class="options">
+          <label>オプション</label>
+          <label class="chip" :class="{ active: excludeRetweets }">
+            <input type="checkbox" v-model="excludeRetweets">
+            RT除外
+          </label>
+          <label class="chip" :class="{ active: imagesOnly }">
+            <input type="checkbox" v-model="imagesOnly">
+            画像のみ
+          </label>
+        </div>
+
+        <div class="field result-area">
+          <label>生成クエリ</label>
+          <textarea id="searchText" rows="3" readonly>{{ generateSearchText() }}</textarea>
+          <button class="copy-btn" :class="{ copied: copyDone }" @click="copyQuery()">{{ copyDone ? 'コピーしました' : 'コピー' }}</button>
         </div>
       </div>
     </div>
 
-    <!-- Exclude Word 入力 -->
-    <div class="row">
-      <div class="col-md-6">
-        <div class="form-group">
-          <label for="excludeWord">Exclude Word:</label>
-          <input type="text" class="form-control" id="excludeWord" v-model="excludeWord" placeholder="Enter word to exclude">
-        </div>
-      </div>
-    </div>
-
-    <!-- Options 選択 -->
-    <div class="form-group">
-      <label>Options:</label>
-      <div>
-        <button class="toggle-btn mr-2" :class="excludeRetweets ? 'exclude-retweets' : 'include-retweets'" type="button" @click="toggleRetweets()">
-          {{ excludeRetweets ? 'Exclude Retweets' : 'Include Retweets' }}
-        </button>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="imagesOnly" v-model="imagesOnly">
-          <label class="form-check-label" for="imagesOnly">Images Only</label>
-        </div>
-      </div>
-    </div>
-
-    <!-- 生成された検索クエリ表示 -->
-    <div class="form-group">
-      <label for="searchText">Generated Twitter Search Text:</label>
-      <textarea id="searchText" class="form-control" rows="5" readonly>{{ generateSearchText() }}</textarea>
-    </div>
+    <footer>
+      <a href="https://mayholiholi.github.io/" target="_blank" rel="noopener noreferrer">&larr; 他のツール</a>
+    </footer>
   </div>
 
-  <!-- Vue.js framework -->
   <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-  
-  <!-- Bootstrap JS -->
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
   <script>
     new Vue({
       el: '#app',
       data: {
-        accountID: 'elonmusk', // イーロンマスクのアカウントIDを初期値として設定
+        accountID: 'elonmusk',
         fromDate: '',
         toDate: '',
         excludeWord: '',
-        excludeRetweets: true, // リツイートをデフォルトで除外
-        imagesOnly: false // 画像のみのフィルタリングをデフォルトで無効
+        excludeRetweets: true,
+        imagesOnly: false,
+        copyDone: false
       },
       methods: {
-        // 検索クエリ生成
         generateSearchText: function() {
-          let searchText = '';
-          if (this.accountID && this.fromDate && this.toDate) {
-            searchText = `from:${this.accountID} since:${this.fromDate} until:${this.toDate}`;
-            if (this.excludeWord) {
-              searchText += ` -${this.excludeWord}`;
-            }
-            if (this.excludeRetweets) {
-              searchText += ' -filter:retweets';
-            }
-            if (this.imagesOnly) {
-              searchText += ' filter:images';
-            }
-          }
-          return searchText;
+          var parts = [];
+          if (this.accountID) parts.push('from:' + this.accountID);
+          if (this.fromDate) parts.push('since:' + this.fromDate);
+          if (this.toDate) parts.push('until:' + this.toDate);
+          if (this.excludeWord) parts.push('-' + this.excludeWord);
+          if (this.excludeRetweets) parts.push('-filter:retweets');
+          if (this.imagesOnly) parts.push('filter:images');
+          return parts.join(' ');
         },
-        // 今日の日付をセット
         setToday: function() {
-          let today = new Date().toISOString().slice(0, 10); 
-          this.fromDate = today;
+          this.fromDate = new Date().toISOString().slice(0, 10);
         },
-        // 去年の日付をセット
         setLastYear: function() {
-          let lastYear = new Date();
-          lastYear.setFullYear(lastYear.getFullYear() - 1);
-          this.toDate = lastYear.toISOString().slice(0, 10); 
+          var d = new Date();
+          d.setFullYear(d.getFullYear() - 1);
+          this.toDate = d.toISOString().slice(0, 10);
         },
-        // リツイートの除外をトグル
-        toggleRetweets: function() {
-          this.excludeRetweets = !this.excludeRetweets;
+        copyQuery: function() {
+          var text = this.generateSearchText();
+          if (!text) return;
+          var self = this;
+          navigator.clipboard.writeText(text).then(function() {
+            self.copyDone = true;
+            setTimeout(function() { self.copyDone = false; }, 1500);
+          });
         }
       }
     });
   </script>
-  
-  <!-- フッター -->
-  <footer>
-    <div class="container">
-      <p><a href="https://mayholiholi.github.io/" target="_blank" rel="noopener noreferrer" style="color:#999;text-decoration:none;">&larr; 他のツール</a></p>
-    </div>
-  </footer>
 </body>
 </html>
